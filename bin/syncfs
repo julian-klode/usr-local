@@ -1,0 +1,27 @@
+#!/usr/bin/python3
+#
+# Usage: syncfs PATH
+#
+# Synchronises the file system that contains PATH. PATH may be a
+# file or a directory.
+
+import ctypes
+import errno
+import os
+import sys
+
+libc = ctypes.CDLL("libc.so.6")
+
+try:
+    fd = os.open(sys.argv[1], os.O_DIRECTORY | os.O_RDONLY)
+except OSError as e:
+    if e.errno == errno.ENOTDIR:
+        fd = os.open(sys.argv[1], os.O_RDONLY)
+    else:
+        print(e, file=sys.stderr)
+        sys.exit(127)
+
+if libc.syncfs(fd) != 0:
+    errno = ctypes.get_errno()
+    print("Could not syncfs(): %s"  % os.strerror(errno), file=sys.stderr)
+    sys.exit(1)

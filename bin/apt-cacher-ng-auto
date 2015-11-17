@@ -1,0 +1,17 @@
+#!/bin/sh
+#
+# Automatically change the APT proxy depending on the network.
+#
+# Especially on the university network @ home, we need to use
+# a proxy in order to circumvent the traffic limits.
+#
+
+network_name=$(nmcli  -t -f device,name  c show --active  | sed -nr 's/wlan0:(.*)/\1/p') 
+
+if [ "$network_name" = "JNet (automatisch)" ]; then
+	echo http://www-proxy1.uni-marburg.de:3128/	# Running on university network
+elif service apt-cacher-ng status > /dev/null; then
+	echo http://localhost:3142			# Local proxy running
+else
+	echo DIRECT					# Don't use a proxy
+fi
