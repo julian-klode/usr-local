@@ -10,18 +10,11 @@ import errno
 import os
 import sys
 
-libc = ctypes.CDLL("libc.so.6")
-
-try:
-    fd = os.open(sys.argv[1], os.O_DIRECTORY | os.O_RDONLY)
-except OSError as e:
-    if e.errno == errno.ENOTDIR:
-        fd = os.open(sys.argv[1], os.O_RDONLY)
-    else:
-        print(e, file=sys.stderr)
-        sys.exit(127)
+libc = ctypes.CDLL("libc.so.6", use_errno=True)
+fd = os.open(sys.argv[1], os.O_RDONLY)
 
 if libc.syncfs(fd) != 0:
     errno = ctypes.get_errno()
-    print("Could not syncfs(): %s"  % os.strerror(errno), file=sys.stderr)
+    errmsg = os.strerror(errno)
+    print("Could not syncfs(): %s" % errmsg, file=sys.stderr)
     sys.exit(1)
