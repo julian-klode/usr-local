@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Automatically change the APT proxy depending on the network.
 #
@@ -7,9 +7,10 @@
 #
 
 network_name=$(nmcli  -t -f device,name  c show --active  | sed -nr 's/wlan0:(.*)/\1/p') 
+proxyno=$((($RANDOM >= 16000) + 1))	# Random proxy no 1 or 2, slightly favouring 2
 
 if [ "$network_name" = "JNet (automatisch)" ]; then
-	echo http://www-proxy1.uni-marburg.de:3128/	# Running on university network
+	echo http://www-proxy${proxyno}.uni-marburg.de:3128/	# Running on university network
 elif service apt-cacher-ng status > /dev/null; then
 	echo http://localhost:3142			# Local proxy running
 else
