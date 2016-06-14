@@ -1,0 +1,10 @@
+#!/bin/sh
+username="$1"
+shift
+userid=`id -u $username`
+dbus=$(strings /proc/$(pgrep -U $userid gnome-session | head -n 1)/environ | grep DBUS)
+xauth=$(strings /proc/$(pgrep -U $userid gnome-session | head -n 1)/environ | grep XAUTH)
+display=$(strings /proc/$(pgrep -U $userid gnome-session | head -n 1)/environ | grep DISPLAY)
+runtime=$(strings /proc/$(pgrep -U $userid gnome-session | head -n 1)/environ | grep XDG_RUNTIME)
+
+sudo -u $username env $dbus $xauth $display $runtime "$@"
