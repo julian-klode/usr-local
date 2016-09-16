@@ -1,0 +1,70 @@
+#!/bin/sh
+#
+# Automatic multi-profile borg backup script
+
+do_create() {
+    local archive=$(date "+%Y-%m-%d-%H-%M")
+
+    args=""
+    if tty -s; then
+        args=" --progress --info"
+    fi
+    borg create $args --one-file-system  \
+                 --exclude-caches  \
+                 --stats \
+                 ${create_policy} \
+                 $location::${archive}  ${create_sources}
+}
+
+do_prune() {
+    borg prune --stats $prune_policy $location
+}
+
+do_list() {
+    if [ -z "$1" ]; then
+        borg list ${location}
+    else
+        borg list ${location}::$1
+    fi
+}
+
+do_info() {
+    borg list $location::$archive
+}
+
+do_cron() {
+    do_create
+    do_prune
+}
+
+do_diff() {
+    args=""
+    while echo "$1" | grep -q "^--"; do
+        args="$args $1"
+        shift
+    done
+    borg diff $args $location::$1 $2
+}
+
+do_delete() {
+    args=""
+    while echo "$1" | grep -q "^--"; do
+        args="$args $1"
+        shift
+    done
+
+    borg delete "$location::$1"
+}
+
+main() {
+    local profile="$1"
+    local command="$2"
+
+    shift 2
+
+    . "$HOME/.config/borg/$profile.conf"
+
+    do_${command} "$@"
+}
+
+main "$@"
