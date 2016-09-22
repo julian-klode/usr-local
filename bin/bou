@@ -3,7 +3,7 @@
 # Automatic multi-profile borg backup script
 
 do_create() {
-    local archive=$(date "+%Y-%m-%d-%H-%M")
+    local archive="$archive_prefix$archive_suffix"
 
     args=""
     if tty -s; then
@@ -17,7 +17,7 @@ do_create() {
 }
 
 do_prune() {
-    borg prune --stats $prune_policy $location
+    borg prune --info --list --stats $prune_policy --prefix "$archive_prefix" $location "$@"
 }
 
 do_list() {
@@ -29,7 +29,11 @@ do_list() {
 }
 
 do_info() {
-    borg info $location::$1
+    if [ -z "$1" ]; then
+        borg info $location
+    else
+        borg info $location::$1
+    fi
 }
 
 do_cron() {
