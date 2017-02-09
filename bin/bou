@@ -7,10 +7,11 @@ do_create() {
 
     args=""
     if tty -s; then
-        args=" --progress --info"
+        args=" --progress"
     fi
     borg create $args --one-file-system  \
                  --exclude-caches  \
+                 --info \
                  --stats \
                  ${create_policy} \
                  $location::${archive}  ${create_sources}
