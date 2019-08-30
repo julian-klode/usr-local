@@ -1,0 +1,54 @@
+file=$(mktemp)
+trap "rm $file" EXIT
+
+run() {
+	echo "$@"
+	"$@"
+}
+
+for i in *.pdf; do
+	pdftotext $i $file
+	isin=""
+	type=""
+	date="$(egrep -o 'zum \b[0-9]{2}\.[0-9]{2}\.[0-9]{4}\b' $file | head -1 | awk '{print $2}')"
+	if [ -z "$date" ]; then
+		date=$(egrep -o '\b[0-9]{2}\.[0-9]{2}\.[0-9]{4}\b' $file | head -1)
+	fi
+	date=$(echo $date | awk -F'.' '{ print $3"-"$2"-"$1}')
+	order=$(egrep . $file | grep -A1 ORDER   | tail -1)
+	
+	if grep -q WERTPAPIERABRECHNUNG $file; then
+		type=Wertpapierabrechnung
+		isin=$(egrep -o '\b[A-Z]{2}[0-9A-Z]{10}\b' $file | head -1)
+	elif grep -q KONTOAUSZUG $file; then
+		type=Kontoauszug
+	elif grep -q DEPOTAUSZUG $file; then
+		type=Depotauszug
+	else
+		echo "E: Unknown file $i" >&2
+		exit 1
+	fi
+
+	case $(echo $date | cut -d- -f2) in
+		01|02|03) quarter=Q1;;
+		04|05|06) quarter=Q2;;
+		07|08|09) quarter=Q3;;
+		08|11|12) quarter=Q4;;
+		*)
+			echo "Unknown month in $date" >&2
+			exit 1;;
+	esac
+
+	dir=$(echo $date | cut -d- -f1)$quarter
+	
+	if [ "$isin" -a "$order" ]; then
+		new=$type-$date-$isin-$order.pdf
+	elif [ "$isin" ]; then
+		new=$type-$date-$isin.pdf
+	else
+		new=$type-$date.pdf
+	fi
+
+	test -d $dir || run mkdir $dir
+	run mv $i $dir/$new
+done
