@@ -38,7 +38,7 @@ for i in *.pdf; do
 		01|02|03) quarter=Q1;;
 		04|05|06) quarter=Q2;;
 		07|08|09) quarter=Q3;;
-		08|11|12) quarter=Q4;;
+		10|11|12) quarter=Q4;;
 		*)
 			echo "Unknown month in $date" >&2
 			exit 1;;
