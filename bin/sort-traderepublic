@@ -1,3 +1,4 @@
+#!/bin/sh
 file=$(mktemp)
 trap "rm $file" EXIT
 
@@ -5,6 +6,10 @@ run() {
 	echo "$@"
 	"$@"
 }
+
+cd "$1"
+
+test -e .archive || mkdir .archive
 
 for i in *.pdf; do
 	pdftotext $i $file
@@ -50,5 +55,6 @@ for i in *.pdf; do
 	fi
 
 	test -d $dir || run mkdir $dir
-	run mv $i $dir/$new
+	run ln $i $dir/$new
+	run mv $i .archive
 done
