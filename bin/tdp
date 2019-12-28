@@ -1,0 +1,39 @@
+#!/bin/sh
+write() {
+	file="$1"
+	shift
+	if [ "$UID" = "0" ]; then
+		echo "$@" > $file
+	else
+		echo "$@" | sudo tee "$file"
+	fi
+}
+
+if [ "$1" = "auto" ]; then
+	if on_ac_power; then
+		set raise
+	else
+		set reset
+	fi
+fi
+
+case "$1" in
+	status)
+		tail /sys/bus/pci/drivers/proc_thermal/0000:00:04.0/tcc_offset_degree_celsius \
+		     /sys/devices/virtual/powercap/intel-rapl/intel-rapl:0/constraint_0_power_limit_uw \
+		     /sys/devices/virtual/powercap/intel-rapl-mmio/intel-rapl-mmio:0/constraint_0_power_limit_uw
+		;;
+	raise)
+		write /sys/bus/pci/drivers/proc_thermal/0000:00:04.0/tcc_offset_degree_celsius 5
+		write /sys/devices/virtual/powercap/intel-rapl/intel-rapl:0/constraint_0_power_limit_uw 44000000
+		write /sys/devices/virtual/powercap/intel-rapl-mmio/intel-rapl-mmio:0/constraint_0_power_limit_uw 44000000
+		;;
+	reset)
+		write /sys/bus/pci/drivers/proc_thermal/0000:00:04.0/tcc_offset_degree_celsius 20
+		write /sys/devices/virtual/powercap/intel-rapl/intel-rapl:0/constraint_0_power_limit_uw 15000000
+		write /sys/devices/virtual/powercap/intel-rapl-mmio/intel-rapl-mmio:0/constraint_0_power_limit_uw 15000000
+		;;
+	*)
+		echo "E: Missing/unknown argument: $1, expected 'raise' or 'reset'" >&2
+		exit 1
+esac
