@@ -1,0 +1,14 @@
+[Unit]
+Description=TDP
+Before=sleep.target
+StopWhenUnneeded=yes
+Documentation=https://github.com/julian-klode/usr-local
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/tdp auto
+ExecStop=/usr/local/bin/tdp auto
+
+[Install]
+WantedBy=sleep.target multi-user.target
