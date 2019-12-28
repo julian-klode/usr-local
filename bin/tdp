@@ -1,4 +1,5 @@
 #!/bin/sh
+UID=$(id -u)
 write() {
 	file="$1"
 	shift
