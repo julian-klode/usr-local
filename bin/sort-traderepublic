@@ -15,20 +15,27 @@ for i in *.pdf; do
 	pdftotext $i $file
 	isin=""
 	type=""
-	date="$(egrep -o 'zum \b[0-9]{2}\.[0-9]{2}\.[0-9]{4}\b' $file | head -1 | awk '{print $2}')"
+	date="$(egrep -o 'zum \b([0-9]{4}-[0-9]{2}-[0-9]{2}|[0-9]{2}\.[0-9]{2}\.[0-9]{4})\b' $file | head -1 | awk '{print $2}')"
 	if [ -z "$date" ]; then
-		date=$(egrep -o '\b[0-9]{2}\.[0-9]{2}\.[0-9]{4}\b' $file | head -1)
+		date=$(egrep -o '\b([0-9]{4}-[0-9]{2}-[0-9]{2}|[0-9]{2}\.[0-9]{2}\.[0-9]{4})\b' $file | head -1)
 	fi
-	date=$(echo $date | awk -F'.' '{ print $3"-"$2"-"$1}')
-	order=$(egrep . $file | grep -A1 ORDER   | tail -1)
-	
-	if grep -q WERTPAPIERABRECHNUNG $file; then
+	if echo $date | grep -qF .; then
+		date=$(echo $date | awk -F'.' '{ print $3"-"$2"-"$1}')
+	fi
+	order=$(egrep . $file | grep -A3 ORDER   | grep '^[a-z0-9-]*$' | tail -1)
+	if grep -q "^Jahressteuerbescheinigung für das Jahr [0-9]*$" $file; then
+		year=$(sed -nr "s/^Jahressteuerbescheinigung für das Jahr ([0-9]*)$/\1/p" $file)
+		date=$year-12-31
+		type=Jahressteuerbescheinigung
+	elif grep -q WERTPAPIERABRECHNUNG $file; then
 		type=Wertpapierabrechnung
 		isin=$(egrep -o '\b[A-Z]{2}[0-9A-Z]{10}\b' $file | head -1)
 	elif grep -q KONTOAUSZUG $file; then
 		type=Kontoauszug
-	elif grep -q DEPOTAUSZUG $file; then
+	elif egrep -q DEPOTAUSZUG\|JAHRESDEPOTABSTIMMUNG $file; then
 		type=Depotauszug
+	elif grep -q STEUERABRECHNUNG $file; then
+		type=Steuerabrechnung
 	else
 		echo "E: Unknown file $i" >&2
 		exit 1
@@ -44,8 +51,9 @@ for i in *.pdf; do
 			exit 1;;
 	esac
 
+
 	dir=$(echo $date | cut -d- -f1)$quarter
-	
+
 	if [ "$isin" -a "$order" ]; then
 		new=$type-$date-$isin-$order.pdf
 	elif [ "$isin" ]; then
