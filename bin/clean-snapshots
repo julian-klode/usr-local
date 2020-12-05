@@ -1,0 +1,48 @@
+#!/usr/bin/python3
+
+import os
+import datetime
+import itertools
+import subprocess
+
+keep = {
+    "latest": ("%Y-%m-%d %H:%M:%S", 1),
+    "hourly": ("%Y-%m-%d %H", 3),
+    "daily": ("%Y-%m-%d", 7),
+    "weekly": ("%Y-week%V", 2),
+    "monthly": ("%Y-%m", 0),
+}
+
+snaps = []
+for snap in os.listdir("/mnt"):
+    if not snap.startswith("@apt-snapshot"):
+        continue
+
+    dt = datetime.datetime.strptime(snap, "@apt-snapshot-%Y-%m-%d_%H:%M:%S")
+
+    snaps.append((snap, dt))
+
+snaps.sort(key=lambda k: k[1], reverse=True)
+
+to_keep = {}
+for name, (fmt, count) in keep.items():
+    for index, (_group, items) in enumerate(itertools.groupby(snaps, lambda k: k[1].strftime(fmt))):
+        if index >= count:
+            break
+        try:
+            i = next(items)
+            print(name, "Keep", i[0])
+            try:
+                to_keep[i].append(name)
+            except KeyError:
+                to_keep[i] = [name]
+        except StopIteration:
+            pass
+
+
+for name, _dt in snaps:
+    if (name, _dt) in to_keep:
+        print("Keeping", name, "due to", ", ".join(to_keep[(name, _dt)]))
+    else:
+        print("Deleting", name)
+        subprocess.check_call(["btrfs", "sub", "delete", os.path.join("/mnt", name)])
