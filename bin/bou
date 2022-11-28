@@ -18,7 +18,7 @@ do_create() {
 }
 
 do_prune() {
-    borg prune --info --list --stats $prune_policy --prefix "$archive_prefix" $location "$@"
+    borg prune --info --list --stats $prune_policy --glob-archives "$archive_prefix*" $location "$@"
     borg compact $location
 }
 
